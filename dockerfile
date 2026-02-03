@@ -6,6 +6,5 @@ COPY Cargo.toml .
 COPY src ./src
 COPY migrations ./migrations
 RUN --mount=type=secret,id=db,env=DATABASE_URL cargo build --release
-COPY .env .env
 EXPOSE 6942
 CMD ["./target/release/backend"]

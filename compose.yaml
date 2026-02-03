@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: ./dockerfile
-      network : host
+      network: host
       secrets:
         - db
     hostname: backend
@@ -12,10 +12,7 @@ services:
       - 6942:6942
     networks:
       - backend
-    depends_on:
-      timescaledb: 
-        condition: service_started
-
+      
   timescaledb:
     image: timescale/timescaledb:latest-pg17
     hostname: timescaledb
@@ -24,9 +21,12 @@ services:
       - 5454:5432
     networks:
       - backend
+      
 networks:
   backend:
-  
+    driver: bridge
+    external: true
+    
 secrets:
   db:
     file: ./db_url.txt
