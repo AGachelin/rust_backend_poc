@@ -1,0 +1,32 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: ./dockerfile
+      network : host
+      secrets:
+        - db
+    hostname: backend
+    env_file: ".env"
+    ports:
+      - 6942:6942
+    networks:
+      - backend
+    depends_on:
+      timescaledb: 
+        condition: service_started
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg17
+    hostname: timescaledb
+    env_file: ".env"
+    ports:
+      - 5454:5432
+    networks:
+      - backend
+networks:
+  backend:
+  
+secrets:
+  db:
+    file: ./db_url.txt
