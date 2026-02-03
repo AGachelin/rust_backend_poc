@@ -25,7 +25,6 @@ services:
 networks:
   backend:
     driver: bridge
-    external: true
     
 secrets:
   db:
