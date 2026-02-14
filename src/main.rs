@@ -7,6 +7,7 @@ use axum::{
     extract::Json,
     response::IntoResponse,
     routing::{get, post},
+    http::StatusCode,
 };
 use sqlx::{PgPool, Error, query_as, query};
 use time::OffsetDateTime;
@@ -57,8 +58,8 @@ async fn query_handler(
     axum::extract::Path(nb): axum::extract::Path<i64>
 ) -> impl axum::response::IntoResponse {
     match get_item(&state.pool, nb).await {
-        Ok(res) => axum::response::Json(json!(res)),
-        Err(err) => {println!("{}",err); axum::response::Json(json!({"error": "Failed to get item"}))}
+        Ok(res) => (StatusCode::OK, axum::response::Json(json!(res))).into_response(),
+        Err(err) => {println!("{}",err); (StatusCode::INTERNAL_SERVER_ERROR, axum::response::Json(json!({"error": "Failed to get item"}))).into_response()}
     }
 }
 
@@ -88,8 +89,8 @@ async fn create_handler(
     Json(payload): Json<Item2>
 ) -> impl axum::response::IntoResponse {
     match create_item(&state.pool, payload.nb_people, payload.source).await {
-        Ok(item) => axum::response::Json(json!(item)),
-        Err(err) => {println!("{}",err); axum::response::Json(json!({"error": "Failed to create item"}))},
+        Ok(item) => (StatusCode::CREATED, axum::response::Json(json!(item))).into_response(),
+        Err(err) => {println!("{}",err); (StatusCode::INTERNAL_SERVER_ERROR, axum::response::Json(json!({"error": "Failed to create item"}))).into_response()},
     }
 }
 
@@ -180,8 +181,8 @@ async fn query_day_handler(
     Json(payload): Json<DayRequest>,
 ) -> impl axum::response::IntoResponse {
     match get_day(&state.pool, &payload.date).await {
-        Ok(res) => axum::response::Json(json!(res)),
-        Err(err) => {println!("{}",err); axum::response::Json(json!({"error": "Failed to get people for the day"}))}
+        Ok(res) => (StatusCode::OK, axum::response::Json(json!(res))).into_response(),
+        Err(err) => {println!("{}",err); (StatusCode::INTERNAL_SERVER_ERROR, axum::response::Json(json!({"error": "Failed to get people for the day"}))).into_response()}
     }
 }
 
