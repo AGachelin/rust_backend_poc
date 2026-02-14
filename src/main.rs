@@ -150,52 +150,14 @@ async fn send_close_message(mut socket: WebSocket, code: u16, reason: &str) {
         .await;
 }
 
-pub async fn get_past_day(pool: &PgPool) -> Result<Vec<Item>, sqlx::Error> {
-    let rows = query_as::<_, (OffsetDateTime, i32, Option<String>)>(
-        "SELECT time, nb_people, source FROM line WHERE DATE(time) = DATE(NOW()) ORDER BY time DESC",
-    )
-    .fetch_all(pool)
-    .await?;
-
-    let items = rows
-        .into_iter()
-        .map(|(time, nb_people, source)| Item {
-            time: format!("{:02}:{:02}", time.hour(), time.minute()),
-            nb_people,
-            source,
-        })
-        .collect();
-
-    Ok(items)
-}
-
-pub async fn get_day_before(pool: &PgPool) -> Result<Vec<Item>, sqlx::Error> {
-    let rows = query_as::<_, (OffsetDateTime, i32, Option<String>)>(
-        "SELECT time, nb_people, source FROM line WHERE DATE(time) = DATE(NOW()) - INTERVAL '1 day' ORDER BY time DESC",
-    )
-    .fetch_all(pool)
-    .await?;
-
-    let items = rows
-        .into_iter()
-        .map(|(time, nb_people, source)| Item {
-            time: format!("{:02}:{:02}", time.hour(), time.minute()),
-            nb_people,
-            source,
-        })
-        .collect();
-
-    Ok(items)
-}
-
 #[derive(Deserialize)]
 pub struct DayRequest {
     pub date: String,
 }
 
-pub async fn get_people_per_hour(pool: &PgPool, date: &str) -> Result<Vec<Item>, sqlx::Error> {
+pub async fn get_day(pool: &PgPool, date: &str) -> Result<Vec<Item>, sqlx::Error> {
     let rows = query_as::<_, (OffsetDateTime, i32, Option<String>)>(
-        "SELECT date_trunc('hour', time) AS time, SUM(nb_people)::int AS nb_people, NULL::text AS source FROM line WHERE time >= $1::date AND time < ($1::date + INTERVAL '1 day') GROUP BY date_trunc('hour', time) ORDER BY time ASC;",
+        "SELECT time, nb_people, source FROM line WHERE time >= $1::date AND time < ($1::date + INTERVAL '1 day') ORDER BY time DESC",
     )
     .bind(date)
     .fetch_all(pool)
@@ -204,7 +166,7 @@ pub async fn get_people_per_hour(pool: &PgPool, date: &str) -> Result<Vec<Item>,
     let items = rows
         .into_iter()
         .map(|(time, nb_people, source)| Item {
-            time: format!("{:02}:00", time.hour()),
+            time: format!("{:02}:{:02}", time.hour(), time.minute()),
             nb_people,
             source,
         })
@@ -213,31 +175,13 @@ pub async fn get_people_per_hour(pool: &PgPool, date: &str) -> Result<Vec<Item>,
     Ok(items)
 }
 
-async fn past_day_handler(
-    axum::extract::State(state): axum::extract::State<AppState>,
-) -> impl axum::response::IntoResponse {
-    match get_past_day(&state.pool).await {
-        Ok(res) => axum::response::Json(json!(res)),
-        Err(err) => {println!("{}",err); axum::response::Json(json!({"error": "Failed to get past day data"}))}
-    }
-}
-
-async fn people_per_hour_handler(
+async fn query_day_handler(
     axum::extract::State(state): axum::extract::State<AppState>,
     Json(payload): Json<DayRequest>,
 ) -> impl axum::response::IntoResponse {
-    match get_people_per_hour(&state.pool, &payload.date).await {
+    match get_day(&state.pool, &payload.date).await {
         Ok(res) => axum::response::Json(json!(res)),
-        Err(err) => {println!("{}",err); axum::response::Json(json!({"error": "Failed to get people per hour"}))}
-    }
-}
-
-async fn day_before_handler(
-    axum::extract::State(state): axum::extract::State<AppState>,
-) -> impl axum::response::IntoResponse {
-    match get_day_before(&state.pool).await {
-        Ok(res) => axum::response::Json(json!(res)),
-        Err(err) => {println!("{}",err); axum::response::Json(json!({"error": "Failed to get day before data"}))}
+        Err(err) => {println!("{}",err); axum::response::Json(json!({"error": "Failed to get people for the day"}))}
     }
 }
 
@@ -252,9 +196,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/web_socket", get(websocket_handler))
         .route("/", get(|| async { "Hello, World!" }))
         .route("/get_people/{nb}", get(query_handler))
-        .route("/get_today", get(past_day_handler))
-        .route("/get_yesterday", get(day_before_handler))
-        .route("/people_per_hour", post(people_per_hour_handler))
+        .route("/get_day", post(query_day_handler))
         .route("/new_data", post(create_handler))
         .with_state(state);
     
