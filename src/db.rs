@@ -70,11 +70,16 @@ pub async fn create_item(
 }
 
 pub async fn test_data(pool: &PgPool) -> Result<(), sqlx::Error> {
-    let row = sqlx::query(
-     "INSERT INTO line (time, nb_people, source)
-    SELECT NOW() - (INTERVAL '1 minute' * s), (random() * 100)::int, CASE WHEN random() < 0.5 THEN 'wifi' ELSE 'photo' END
-    FROM generate_series(1, 100000) s;"
-    )
+    let _ = sqlx::query("
+    INSERT INTO line (time, nb_people, source)
+    SELECT 
+      date_trunc('day', NOW() - INTERVAL '11 hour 20 minute') - INTERVAL '1 day' * ((s - 1) / 100) +
+      INTERVAL '11 hour 20 minute' + 
+      INTERVAL '1 minute' * (s - 1 % 160),
+      (random() * 100)::int,
+      CASE WHEN random() < 0.5 THEN 'wifi' ELSE 'photo' END
+    FROM generate_series(1, 16000) s;
+    ")
     .execute(pool)
     .await?;
     Ok(())
