@@ -26,6 +26,7 @@ async fn main() -> anyhow::Result<()> {
         .route(config::ROUTE_GET_PEOPLE, get(handlers::get_most_recent_handler))
         .route(config::ROUTE_GET_DAY, post(handlers::get_day_handler))
         .route(config::ROUTE_NEW_DATA, post(handlers::create_handler))
+        .route(config::ROUTE_FAKE_DATA, get(handlers::test_data_handler))
         .with_state(state);
 
     let address = SocketAddr::from((config::SERVER_HOST, config::SERVER_PORT));

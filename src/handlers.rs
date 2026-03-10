@@ -71,3 +71,21 @@ pub async fn create_handler(
         }
     }
 }
+
+pub async fn test_data_handler(
+        State(state): State<AppState>
+) -> impl IntoResponse {
+    match db::test_data(&state.pool).await {
+        Ok(_) => (StatusCode::OK, Json("Fake data generated successfully")).into_response(),
+        Err(err) => {
+            eprintln!("Failed to generate fake data: {}", err);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse {
+                    error: "Failed to generate fake data".to_string(),
+                }),
+            )
+                .into_response()
+        }
+    }
+}   
