@@ -7,3 +7,5 @@ WITH (
   timescaledb.hypertable,
   timescaledb.partition_column='time'
 );
+
+CREATE INDEX idx_line_time_desc ON line (time DESC);
