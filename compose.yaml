@@ -7,6 +7,7 @@ services:
       secrets:
         - db
     hostname: backend
+    env_file: ".env"
     ports:
       - 6942:6942
     networks:
@@ -15,6 +16,7 @@ services:
   timescaledb:
     image: timescale/timescaledb:latest-pg17
     hostname: timescaledb
+    env_file: ".env"
     environment:
       - TS_TUNE_MEMORY=2GB
       - TS_TUNE_NUM_CPUS=2
