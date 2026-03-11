@@ -75,7 +75,7 @@ pub async fn test_data(pool: &PgPool) -> Result<(), sqlx::Error> {
     SELECT 
       date_trunc('day', NOW() - INTERVAL '11 hour 20 minute') - INTERVAL '1 day' * ((s - 1) / 100) +
       INTERVAL '11 hour 20 minute' + 
-      INTERVAL '1 minute' * (s - 1 % 160),
+      INTERVAL '1 minute' * ((s - 1) % 160),
       (random() * 100)::int,
       CASE WHEN random() < 0.5 THEN 'wifi' ELSE 'photo' END
     FROM generate_series(1, 16000) s;
